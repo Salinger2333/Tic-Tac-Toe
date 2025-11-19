@@ -3,7 +3,6 @@ function Cell() {
     const getValue = () => value
     const addToken = (token) => {
         if (value !== null) {
-            console.log('这里下过了');
             return false
         }
         value = token
@@ -114,21 +113,21 @@ const GameController = (function () {
         }
         if (Gameboard.dropToken(row, col, getActivatePlayer().mark)) {
             if (Gameboard.checkWin()) {
-                console.log(`游戏结束,${getActivatePlayer().name}胜利`);
+                DisplayController.renderNote(`game over,${getActivatePlayer().name} wins`);
                 renderBoard()
                 isGameLast = false
             } else if (Gameboard.checkDraw()) {
-                console.log(`平局,游戏结束`);
+                DisplayController.renderNote(`draw, game over`);
                 renderBoard()
                 isGameLast = false
             } else {
                 switchPlayer()
                 renderBoard()
-                console.log(`轮到 ${getActivatePlayer().name}的回合:${getActivatePlayer().mark}`);
+                DisplayController.renderNote(`now is ${getActivatePlayer().name}'s turn`);
 
             }
         } else {
-            console.log('该格已经存在,请重新下');
+            DisplayController.renderNote('this cell is exist');
         }
     }
     return {
@@ -152,7 +151,8 @@ const DisplayController = (function () {
         `;
     const cells = document.querySelectorAll('.cell')
     const container = document.querySelector('.container')
-    const renderBoard = function (e) {
+    const note = document.querySelector('.note')
+    const renderBoard = function () {
         const board = Gameboard.getBoardValue()
         cells.forEach((cell) => {
             const row = cell.dataset.row
@@ -168,6 +168,9 @@ const DisplayController = (function () {
             }
         })
     }
+    const renderNote = function (text) {
+        note.textContent = text
+    }
     const dropTokenInDom = function (e) {
         const clickCell = e.target.closest('.cell')
         if (!clickCell) return
@@ -179,6 +182,7 @@ const DisplayController = (function () {
     container.addEventListener('click', dropTokenInDom)
     return {
         renderBoard,
+        renderNote
     }
 })()
 
