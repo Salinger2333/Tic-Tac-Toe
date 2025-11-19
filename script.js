@@ -101,6 +101,7 @@ const GameController = (function () {
         // console.table(Gameboard.getBoardValue())
     }
     const restart = () => {
+        activatePlayer = player1
         Gameboard.clearBoard()
         DisplayController.renderBoard()
     }
