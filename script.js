@@ -21,8 +21,8 @@ const Player = (name, mark) => {
         mark
     }
 }
-const player1 = Player('player1','x')
-const player2 = Player('player2','o')
+const player1 = Player('player1', 'x')
+const player2 = Player('player2', 'o')
 
 const Gameboard = (function () {
     //创建一个二维数组为棋盘
@@ -31,12 +31,16 @@ const Gameboard = (function () {
         for (let i = 0; i < 3; i++) {
             board[i] = []
             for (let j = 0; j < 3; j++)
-                board[i].push(Cell())
+                board[i][j] = Cell()
         }
     }
     init()
+    const clearBoard = () => {
+        init()
+        console.table(getBoardValue());
+    }
 
-    const getBoardState = () => {
+    const getBoardValue = () => {
         const boardWithCellValues = board.map((row) => {
             return row.map((cell) => {
                 return cell.getValue()
@@ -44,15 +48,13 @@ const Gameboard = (function () {
         })
         return boardWithCellValues
     }
-    const clearBoard = () => {
-        init()
-    }
+
     const dropToken = function (rows, cols, mark) {
         return board[rows][cols].addToken(mark)
     }
 
     const checkWin = function () {
-        const board = getBoardState()
+        const board = getBoardValue()
         for (let i = 0; i < 3; i++) {
             if (board[i][0] !== null && board[i][0] === board[i][1] && board[i][1] === board[i][2]) {
                 return true
@@ -71,15 +73,14 @@ const Gameboard = (function () {
         return false
     }
     const checkDraw = function () {
-        const board = getBoardState().flat()
+        const board = getBoardValue().flat()
         //含null,则不为平局
         const isDraw = !board.includes(null)
         return isDraw
     }
 
-
     return {
-        getBoardState,
+        getBoardValue,
         dropToken,
         clearBoard,
         checkDraw,
@@ -88,34 +89,41 @@ const Gameboard = (function () {
 })()
 
 const GameController = (function () {
-    
     let activatePlayer = player1
-
+    let isGameLast = true
     const switchPlayer = () => {
         return activatePlayer = activatePlayer === player1 ? player2 : player1
     }
 
     const getActivatePlayer = () => activatePlayer
 
-    const printNewBoard = () => {
-        console.table(Gameboard.getBoardState())
+    const renderBoard = () => {
+        DisplayController.renderBoard()
+        // console.table(Gameboard.getBoardValue())
     }
-
+    const restart = () => {
+        Gameboard.clearBoard()
+        DisplayController.renderBoard()
+    }
 
     // 一回合的完整流程
     const playRound = function (row, col) {
+        if (!isGameLast) {
+            restart()
+            isGameLast = true
+        }
         if (Gameboard.dropToken(row, col, getActivatePlayer().mark)) {
             if (Gameboard.checkWin()) {
                 console.log(`游戏结束,${getActivatePlayer().name}胜利`);
-                printNewBoard()
-                Gameboard.clearBoard()
-
+                renderBoard()
+                isGameLast = false
             } else if (Gameboard.checkDraw()) {
                 console.log(`平局,游戏结束`);
-                Gameboard.clearBoard()
+                renderBoard()
+                isGameLast = false
             } else {
                 switchPlayer()
-                printNewBoard()
+                renderBoard()
                 console.log(`轮到 ${getActivatePlayer().name}的回合:${getActivatePlayer().mark}`);
 
             }
@@ -124,7 +132,54 @@ const GameController = (function () {
         }
     }
     return {
+        getActivatePlayer,
         playRound
     }
 })()
+
+
+const DisplayController = (function () {
+    const svgX = `
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="20" y1="20" x2="80" y2="80" stroke="#60A5FA" stroke-width="12" stroke-linecap="round" />
+                <line x1="80" y1="20" x2="20" y2="80" stroke="#60A5FA" stroke-width="12" stroke-linecap="round" />
+            </svg>
+        `;
+    const svgO = `
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="32" stroke="#FB7185" stroke-width="12" stroke-linecap="round" />
+            </svg>
+        `;
+    const cells = document.querySelectorAll('.cell')
+    const container = document.querySelector('.container')
+    const renderBoard = function (e) {
+        const board = Gameboard.getBoardValue()
+        cells.forEach((cell) => {
+            const row = cell.dataset.row
+            const col = cell.dataset.col
+            const cellValue = board[row][col]
+
+            if (cellValue === 'x') {
+                cell.innerHTML = svgX
+            } else if (cellValue === 'o') {
+                cell.innerHTML = svgO
+            } else {
+                cell.innerHTML = ''
+            }
+        })
+    }
+    const dropTokenInDom = function (e) {
+        const clickCell = e.target.closest('.cell')
+        if (!clickCell) return
+        let row = clickCell.dataset.row
+        let col = clickCell.dataset.col
+        if (!row || !col) return
+        GameController.playRound(row, col)
+    }
+    container.addEventListener('click', dropTokenInDom)
+    return {
+        renderBoard,
+    }
+})()
+
 
